@@ -30,7 +30,6 @@ ci/
 │       └── nginx-prod.conf    # Production nginx config
 ├── testing/
 │   └── compose.yml            # Used by GitLab for runtime HTTP checks
-├── bootstrap.sh               # Optional setup script
 ├── README.Docker.md           # Additional Docker notes
 compose.yml                    # Base compose file
 .gitlab-ci.yml                 # GitLab CI/CD pipeline
@@ -103,12 +102,19 @@ The `.gitlab-ci.yml` is structured into three stages:
 
 ## 📦 Composer Requirements
 
-Includes Laravel 11 stack with Jetstream, Livewire, Sanctum, and modern dev tools like:
+Includes Laravel 11+ stack with Jetstream and modern dev tools like:
 
 - PHPStan
 - Enlightn Security Checker
 - PestPHP
 - Laravel Pint (optional)
+
+To install:
+```bash
+composer require --dev enlightn/security-checker
+composer require --dev phpstan/phpstan
+composer require --dev laravel/pint
+```
 
 ---
 
