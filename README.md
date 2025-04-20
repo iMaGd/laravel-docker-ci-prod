@@ -1,61 +1,169 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel Docker CI Template – Ready-to-Copy Dockerized Laravel + GitLab CI Setup
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This repository provides a production-ready **Docker and CI/CD setup for Laravel 11+**, focused on simplicity and portability. It's perfect for developers who want to **dockerize their Laravel application** and **enable GitLab CI/CD** with minimal configuration.
 
-## About Laravel
+> ✅ **Copy & paste friendly!** Easily integrate these files into your existing Laravel project and go live with Docker and GitLab CI/CD in minutes.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🧱 What You Get
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- ✅ A multi-stage **Dockerfile** optimized for performance and clean builds
+- ✅ A robust `.gitlab-ci.yml` with static checks, Docker image build + push, and runtime health checks
+- ✅ A clear `docker compose` setup tailored for **local dev** and **CI testing**
+- ✅ Preconfigured PHP-FPM 8.3 & Nginx with Laravel defaults
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 📁 Project Structure
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+```
+ci/
+├── docker/
+│   ├── php/
+│   │   ├── Dockerfile         # Laravel + PHP-FPM optimized Dockerfile
+│   │   ├── entrypoint.sh      # Entrypoint script for container boot
+│   │   ├── fpm.conf           # PHP-FPM tuning
+│   │   └── php.ini            # PHP settings
+│   └── webserver/
+│       ├── nginx-dev.conf     # Local dev nginx config
+│       └── nginx-prod.conf    # Production nginx config
+├── testing/
+│   └── compose.yml            # Used by GitLab for runtime HTTP checks
+├── bootstrap.sh               # Optional setup script
+├── README.Docker.md           # Additional Docker notes
+compose.yml                    # Base compose file
+.gitlab-ci.yml                 # GitLab CI/CD pipeline
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## ⚙️ Getting Started
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 1. Copy These Files into Your Laravel Project
 
-### Premium Partners
+Add the `ci/`, `.gitlab-ci.yml`, `compose.yml`, and `.dockerignore` files to your Laravel repo.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development/)**
-- **[Active Logic](https://activelogic.com)**
 
-## Contributing
+### 2. Install Static Testing Modules
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+composer require --dev enlightn/security-checker
+composer require --dev phpstan/phpstan
+composer require --dev laravel/pint
+```
 
-## Code of Conduct
+### 3. Build and Run the Image Locally
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+docker compose up -d --build
+```
 
-## Security Vulnerabilities
+Make sure to configure your `.env` and database connections accordingly.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
-## License
+### 4. 🛠️ GitLab CI/CD Setup
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Ensure your GitLab runner supports **Docker-in-Docker (dind)**. Then, commit your `.gitlab-ci.yml` and push to trigger CI.
+
+#### Key GitLab CI Features:
+
+- **Static Analysis**: PHPStan & Security Checker
+- **Multi-platform Docker Build & Push** (via `docker buildx`)
+- **Runtime HTTP Health Check** to validate deployment success
+- Configurable with minimal env vars
+
+---
+
+## 🐘 Dockerfile Highlights
+
+- **Multi-stage**: Builds frontend assets (Vite, Tailwind) separately using Node.js
+- **Production Optimized**: No dev dependencies, `php artisan optimize`, storage permissions handled
+- **Base Image**: [depicter/php:8.3-fpm-alpine](https://hub.docker.com/r/depicter/php)
+
+---
+
+## 🧪 CI Test Strategy
+
+The `.gitlab-ci.yml` is structured into three stages:
+
+1. **Standards**
+    - Run PHPStan
+    - Run Security Checks
+
+2. **Build**
+    - Use `buildx` to build & push multi-platform image
+
+3. **Test**
+    - Pull the built image
+    - Boot via Compose
+    - Run a `/up` HTTP check to confirm runtime health
+
+---
+
+## 📦 Composer Requirements
+
+Includes Laravel 11 stack with Jetstream, Livewire, Sanctum, and modern dev tools like:
+
+- PHPStan
+- Enlightn Security Checker
+- PestPHP
+- Laravel Pint (optional)
+
+---
+
+## 📥 Environment Variables
+
+Customize `.env.testing` and use it with CI jobs. You can adjust `APP_COMPOSE_SERVICE` to point to the right container for health checks.
+
+---
+
+## 🐳 Using Docker-in-Docker (DinD) in GitLab CI
+
+If you're using a Docker-based GitLab Runner and need to run Docker commands (e.g., to build or run containers within your CI pipeline), you'll need to enable **Docker-in-Docker** (DinD).
+
+### 🔧 Step 1: Enable Privileged Mode
+
+Edit the GitLab Runner configuration:
+
+```bash
+sudo nano /etc/gitlab-runner/config.toml
+```
+
+In the relevant runner section, set:
+
+```toml
+privileged = true
+```
+
+> ⚠️ Note: Privileged mode is required to run the Docker daemon inside the runner container.
+
+### 📄 Step 2: Define Variables and CI Job
+
+Update your `.gitlab-ci.yml`:
+
+```yaml
+variables:
+  DOCKER_TLS_CERTDIR: "" # Required to disable TLS and allow DinD
+
+test:
+  image: docker:28.1
+  stage: test
+  services:
+    - name: docker:28.1-dind
+  script:
+    - docker version
+```
+---
+
+## ✅ Final Tips
+
+- Make sure your GitLab runner is **privileged** (required for `dind`)
+- Customize `ci/docker/php/php.ini` and `fpm.conf` for production tuning
+- Use `.env.testing` in `ci/testing` for your CI test environment
+
+---
+
+## 💬 Feedback & Contributions
+
+Feel free to open issues or submit PRs to enhance this template. This project is meant to save Laravel devs time and effort when getting started with CI/CD.

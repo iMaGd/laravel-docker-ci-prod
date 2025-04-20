@@ -1,0 +1,85 @@
+stages:
+  - standards
+  - build
+  - test
+
+variables:
+  APP_VERSION: "0.1.0" # fallback if not set in GitLab CI/CD
+  IMAGE_NAME: app
+  APP_ENV: testing
+  APP_COMPOSE_SERVICE: 'webserver' # The service in docker compose for handling app requests
+  DOCKER_TLS_CERTDIR: "" # Required to allow docker-in-docker. Make sure to set in `privileged` to true in `/etc/gitlab-runner/config.toml` config of runner
+  IMAGE_TAG: ${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}
+  REGISTRY_IMAGE: ${CI_REGISTRY_IMAGE}/${IMAGE_NAME}:${IMAGE_TAG}
+before_script:
+  - cp ci/testing/.env.testing .env
+
+
+# Stage 1 - Job 1
+"Static check":
+  image: composer:2
+  stage: standards
+  before_script:
+    - composer install --prefer-dist --no-progress --no-suggest --no-interaction
+  script:
+    - ./vendor/bin/phpstan analyse --memory-limit=512M app bootstrap config routes/web.php storage
+    - ./vendor/bin/security-checker security:check
+#    - ./vendor/bin/pint --test
+
+
+# Stage 2 - Job 1
+Build:
+  image: docker:28.1
+  stage: build
+  services:
+    - name: docker:28.1-dind
+  before_script:
+    - echo "-> Logging in to GitLab registry"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
+  script:
+    # Create builder
+    - docker buildx create --use --name builder1
+    - docker buildx inspect --bootstrap
+    - echo "-> building and pushing ${IMAGE_NAME}:${IMAGE_TAG}"
+    # Build and push multi-platform image
+    - |
+      docker buildx build \
+        --platform linux/amd64,linux/arm64 \
+        --push \
+        -t "$REGISTRY_IMAGE" \
+        -f ci/docker/php/Dockerfile \
+        .
+
+
+# Stage 3 - Job 1
+"Http Check":
+  stage: test
+  image: docker:28.1
+  services:
+    - name: docker:28.1-dind
+  before_script:
+    - echo "-> Logging in to GitLab registry"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
+    - docker pull "$REGISTRY_IMAGE"
+    - apk add curl
+  script:
+    # Start services using Docker Compose
+    - docker compose -f compose.yml -f ci/testing/compose.yml --env-file ci/testing/.env.testing  up -d
+    - echo "Waiting for app and database to be ready..."
+    # Using `-T`to prevent allocation of a TTY (terminal) for the command
+    # Use web server service name here `(webserver)`
+    - |
+      for i in {1..5}; do
+        echo "Checking http://${APP_COMPOSE_SERVICE}/up .."
+        if docker compose exec -T app curl -s http://${APP_COMPOSE_SERVICE}/up | grep -q "Application up"; then
+          echo "Health check passed ✅"
+          exit 0
+        fi
+        echo "Waiting for app... ($i)"
+        sleep 2
+      done
+
+    - curl -s http://webserver/up
+    - echo "Health check failed ❌"
+    - exit 1
+
